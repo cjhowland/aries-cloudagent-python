@@ -5,7 +5,7 @@ import re
 from abc import ABC, abstractmethod, ABCMeta
 from enum import Enum
 from hashlib import sha256
-from typing import Sequence, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 from ..indy.issuer import IndyIssuer
 from ..utils import sentinel
@@ -70,6 +70,23 @@ class BaseLedger(ABC, metaclass=ABCMeta):
         """
 
     @abstractmethod
+    async def construct_attr_json(
+        self,
+        endpoint: str,
+        endpoint_type: EndpointType = None,
+        all_exist_endpoints: dict = None,
+        routing_keys: List[str] = None,
+    ) -> str:
+        """Create attr_json string.
+
+        Args:
+            all_exist_endpoings: Dictionary of all existing endpoints
+            endpoint: The endpoint address
+            endpoint_type: The type of the endpoint
+            routing_keys: List of routing_keys if mediator is present
+        """
+
+    @abstractmethod
     async def update_endpoint_for_did(
         self,
         did: str,
@@ -77,6 +94,7 @@ class BaseLedger(ABC, metaclass=ABCMeta):
         endpoint_type: EndpointType = EndpointType.ENDPOINT,
         write_ledger: bool = True,
         endorser_did: str = None,
+        routing_keys: List[str] = None,
     ) -> bool:
         """Check and update the endpoint on the ledger.
 
