@@ -1,6 +1,7 @@
 """Ledger base class."""
 
 import re
+import json
 
 from abc import ABC, abstractmethod, ABCMeta
 from enum import Enum

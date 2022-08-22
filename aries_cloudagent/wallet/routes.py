@@ -18,6 +18,7 @@ from ..admin.request_context import AdminRequestContext
 from ..core.event_bus import Event, EventBus
 from ..core.profile import Profile
 from ..connections.models.conn_record import ConnRecord
+from ..connections.util import mediation_record_if_id
 from ..ledger.base import BaseLedger
 from ..ledger.endpoint_type import EndpointType
 from ..ledger.error import LedgerConfigError, LedgerError
@@ -451,8 +452,7 @@ async def wallet_set_public_did(request: web.BaseRequest):
 
     mediation_id = request.query.get("mediation_id")
     profile = context.profile
-    route_manager = profile.inject(RouteManager)
-    mediation_record = await route_manager.mediation_record_if_id(
+    mediation_record = await mediation_record_if_id(
         profile=profile, mediation_id=mediation_id, or_default=True
     )
     routing_keys = None
