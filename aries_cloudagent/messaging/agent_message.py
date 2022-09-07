@@ -1,7 +1,7 @@
 """Agent message base class and schema."""
 
 from collections import OrderedDict
-from typing import Mapping, Union
+from typing import Mapping, Type, TypeVar, Union
 import uuid
 
 from marshmallow import (
@@ -41,6 +41,9 @@ from .base_message import BaseMessage, DIDCommVersion
 
 class AgentMessageError(BaseModelError):
     """Base exception for agent message issues."""
+
+
+MessageType = TypeVar("MessageType", bound="AgentMessage")
 
 
 class AgentMessage(BaseModel, BaseMessage):
@@ -418,8 +421,11 @@ class AgentMessage(BaseModel, BaseMessage):
 
     @classmethod
     def deserialize(
-        cls, value: dict, msg_format: DIDCommVersion = DIDCommVersion.v1, **kwargs
-    ):
+        cls: Type[MessageType],
+        value: dict,
+        msg_format: DIDCommVersion = DIDCommVersion.v1,
+        **kwargs,
+    ) -> MessageType:
         """Return message object deserialized from value in format specified."""
         if msg_format is DIDCommVersion.v2:
             raise NotImplementedError("DIDComm v2 is not yet supported")

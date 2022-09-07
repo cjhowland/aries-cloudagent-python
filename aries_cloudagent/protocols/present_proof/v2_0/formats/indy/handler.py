@@ -1,20 +1,22 @@
 """V2.0 present-proof indy presentation-exchange format handler."""
-
 import json
 import logging
 
 from marshmallow import RAISE
-from typing import Mapping, Tuple
+from typing import List, Mapping, Tuple
 
-from ......indy.holder import IndyHolder
 from ......indy.models.predicate import Predicate
 from ......indy.models.proof import IndyProofSchema
 from ......indy.models.proof_request import IndyProofRequestSchema
+from ......indy.models.requested_creds import IndyRequestedCredsRequestedAttrSchema
 from ......indy.models.xform import indy_proof_req_preview2indy_requested_creds
 from ......indy.util import generate_pr_nonce
 from ......indy.verifier import IndyVerifier
+from ......indy.credx.holder import _normalize_attr_name
+from ......indy.holder import IndyHolder, IndyHolderError
 from ......messaging.decorators.attach_decorator import AttachDecorator
 from ......messaging.util import canon
+from ......wallet.models.attachment_data_record import AttachmentDataRecord
 
 from ....indy.pres_exch_handler import IndyPresExchHandler
 
@@ -165,6 +167,43 @@ class IndyPresExchangeHandler(V20PresFormatHandler):
             requested_credentials=requested_credentials,
         )
         return self.get_format_data(PRES_20, indy_proof)
+
+    async def get_supplements(
+        self, pres_ex_record: V20PresExRecord = None, request_data: dict = None
+    ) -> List[AttachmentDataRecord]:
+        """Retrieve supplements"""
+
+        requested_attributes: dict = request_data.get("requested_attributes", {})
+        indy_pres_request: dict = pres_ex_record.by_format["pres_request"].get(
+            V20PresFormat.Format.INDY.api, {}
+        )
+
+        records: List[AttachmentDataRecord] = []
+        for attr_referent, value in requested_attributes:
+            value: IndyRequestedCredsRequestedAttrSchema
+            cred_id = value.cred_id
+
+            if attr_referent in indy_pres_request["requested_attributes"]:
+                attr = indy_pres_request["requested_attributes"][attr_referent]
+                if "name" in attr:
+                    attribute_name = _normalize_attr_name(attr["name"])
+                else:
+                    raise IndyHolderError(
+                        f"Unknown presentation request referent: {attr_referent}"
+                    )
+                    # TODO: handle "names" scenario
+            else:
+                raise IndyHolderError(
+                    f"Unknown presentation request referent: {attr_referent}"
+                )
+
+            async with self._profile.session() as session:
+                record: AttachmentDataRecord = await AttachmentDataRecord.query_by_cred_id_attribute(
+                    session, cred_id, attribute_name
+                )
+                records.append(record)
+
+        return records
 
     async def receive_pres(self, message: V20Pres, pres_ex_record: V20PresExRecord):
         """Receive a presentation and check for presented values vs. proposal request."""

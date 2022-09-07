@@ -1,12 +1,12 @@
 """present-proof-v2 format handler - supports DIF and INDY."""
 from abc import ABC, abstractclassmethod, abstractmethod
 import logging
-
-from typing import Tuple
+from typing import Sequence, Tuple
 
 from .....core.error import BaseError
 from .....core.profile import Profile
 from .....messaging.decorators.attach_decorator import AttachDecorator
+from .....protocols.issue_credential.v2_0.messages.inner.supplement import Supplement
 
 from ..messages.pres import V20Pres
 from ..messages.pres_format import V20PresFormat
@@ -64,9 +64,7 @@ class V20PresFormatHandler(ABC):
 
     @abstractmethod
     async def create_bound_request(
-        self,
-        pres_ex_record: V20PresExRecord,
-        request_data: dict = None,
+        self, pres_ex_record: V20PresExRecord, request_data: dict = None
     ) -> PresFormatAttachment:
         """Create a presentation request bound to a proposal."""
 
@@ -77,6 +75,12 @@ class V20PresFormatHandler(ABC):
         request_data: dict = None,
     ) -> PresFormatAttachment:
         """Create a presentation."""
+
+    @abstractmethod
+    async def get_supplements(
+        self, pres_ex_record: V20PresExRecord, request_data: dict = None
+    ) -> Sequence[Supplement]:
+        """Retrieve supplements"""
 
     @abstractmethod
     async def receive_pres(self, message: V20Pres, pres_ex_record: V20PresExRecord):

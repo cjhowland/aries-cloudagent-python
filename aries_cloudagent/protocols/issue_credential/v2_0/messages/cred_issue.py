@@ -1,6 +1,6 @@
 """Credential issue message."""
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from marshmallow import EXCLUDE, fields, validates_schema, ValidationError
 
@@ -14,6 +14,7 @@ from .....messaging.valid import UUIDFour
 from ..message_types import CRED_20_ISSUE, PROTOCOL_PACKAGE
 
 from .cred_format import V20CredFormat, V20CredFormatSchema
+from .inner.supplement import Supplement, SupplementSchema
 
 HANDLER_CLASS = f"{PROTOCOL_PACKAGE}.handlers.cred_issue_handler.V20CredIssueHandler"
 
@@ -30,12 +31,14 @@ class V20CredIssue(AgentMessage):
 
     def __init__(
         self,
-        _id: str = None,
+        _id: Optional[str] = None,
         *,
-        replacement_id: str = None,
-        comment: str = None,
-        formats: Sequence[V20CredFormat] = None,
-        credentials_attach: Sequence[AttachDecorator] = None,
+        replacement_id: Optional[str] = None,
+        comment: Optional[str] = None,
+        formats: Optional[Sequence[V20CredFormat]] = None,
+        credentials_attach: Optional[Sequence[AttachDecorator]] = None,
+        supplements: Optional[Sequence[Supplement]] = None,
+        attachments: Optional[Sequence[AttachDecorator]] = None,
         **kwargs,
     ):
         """
@@ -53,6 +56,8 @@ class V20CredIssue(AgentMessage):
         self.comment = comment
         self.formats = list(formats) if formats else []
         self.credentials_attach = list(credentials_attach) if credentials_attach else []
+        self.supplements = supplements or []
+        self.attachments = attachments or []
 
     def attachment(self, fmt: V20CredFormat.Format = None) -> dict:
         """
@@ -110,6 +115,19 @@ class V20CredIssueSchema(AgentMessageSchema):
         required=True,
         data_key="credentials~attach",
         description="Credential attachments",
+    )
+    supplements = fields.Nested(
+        SupplementSchema,
+        description="Supplements to the credential",
+        many=True,
+        required=False,
+    )
+    attachments = fields.Nested(
+        AttachDecoratorSchema,
+        many=True,
+        required=False,
+        description="Attachments of other data associated with the credential",
+        data_key="~attach",
     )
 
     @validates_schema

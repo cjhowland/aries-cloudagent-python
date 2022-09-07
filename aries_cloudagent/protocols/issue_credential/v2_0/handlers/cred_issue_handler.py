@@ -68,7 +68,11 @@ class V20CredIssueHandler(BaseHandler):
         # Automatically move to next state if flag is set
         if context.settings.get("debug.auto_store_credential"):
             try:
-                cred_ex_record = await cred_manager.store_credential(cred_ex_record)
+                cred_ex_record = await cred_manager.store_credential(
+                    cred_ex_record,
+                    supplement=context.message.supplements,
+                    attachment=context.message.attachments,
+                )
             except (
                 BaseModelError,
                 IndyHolderError,

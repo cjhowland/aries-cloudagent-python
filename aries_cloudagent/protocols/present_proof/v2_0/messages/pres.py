@@ -8,6 +8,11 @@ from .....messaging.decorators.attach_decorator import (
     AttachDecorator,
     AttachDecoratorSchema,
 )
+from ....issue_credential.v2_0.messages.inner.supplement import (
+    SupplementSchema,
+    Supplement,
+)
+
 
 from ..message_types import PRES_20, PROTOCOL_PACKAGE
 
@@ -33,6 +38,8 @@ class V20Pres(AgentMessage):
         comment: str = None,
         formats: Sequence[V20PresFormat] = None,
         presentations_attach: Sequence[AttachDecorator] = None,
+        supplements: Supplement = None,
+        attach: AttachDecorator = None,
         **kwargs,
     ):
         """
@@ -49,6 +56,8 @@ class V20Pres(AgentMessage):
         self.presentations_attach = (
             list(presentations_attach) if presentations_attach else []
         )
+        self.supplements = supplements
+        self.attach = attach
 
     def attachment(self, fmt: V20PresFormat.Format = None) -> dict:
         """
@@ -96,6 +105,19 @@ class V20PresSchema(AgentMessageSchema):
     )
     presentations_attach = fields.Nested(
         AttachDecoratorSchema, required=True, many=True, data_key="presentations~attach"
+    )
+    supplements = fields.Nested(
+        SupplementSchema,
+        description="Supplements to the credential",
+        many=True,
+        required=False,
+    )
+    attach = fields.Nested(
+        AttachDecoratorSchema,
+        many=True,
+        required=False,
+        description="Attachments of other data associated with the credential",
+        data_key="~attach",
     )
 
     @validates_schema

@@ -1,6 +1,10 @@
+from uuid import uuid4
 from asynctest import mock as async_mock, TestCase as AsyncTestCase
 
-from ......messaging.decorators.attach_decorator import AttachDecorator
+from ......messaging.decorators.attach_decorator import (
+    AttachDecorator,
+    AttachDecoratorData,
+)
 from ......messaging.models.base import BaseModelError
 
 from .....didcomm_prefix import DIDCommPrefix
@@ -10,6 +14,7 @@ from ...message_types import ATTACHMENT_FORMAT, CRED_20_ISSUE
 from .. import cred_issue as test_module
 from ..cred_format import V20CredFormat
 from ..cred_issue import V20CredIssue
+from ..inner.supplement import Supplement, SupplementAttribute
 
 
 class TestV20CredIssue(AsyncTestCase):
@@ -70,6 +75,10 @@ class TestV20CredIssue(AsyncTestCase):
         },
     }
 
+    ATTACHMENT = AttachDecorator(
+        ident=str(uuid4()), data=AttachDecoratorData(json_={"test": "value"})
+    )
+
     CRED_ISSUE = V20CredIssue(
         replacement_id="0",
         comment="Test",
@@ -85,6 +94,14 @@ class TestV20CredIssue(AsyncTestCase):
                 ident="indy",
             )
         ],
+        supplements=[
+            Supplement(
+                type="hashlink-data",
+                ref=ATTACHMENT.ident,
+                attrs=[SupplementAttribute(key="field", value="legalName")],
+            )
+        ],
+        attachments=[ATTACHMENT],
     )
 
     async def test_init_type(self):
@@ -119,8 +136,17 @@ class TestV20CredIssue(AsyncTestCase):
         """Test deserialization."""
         obj = TestV20CredIssue.CRED_ISSUE.serialize()
 
+        assert obj["~attach"]
+        assert obj["~attach"][0]["@id"] == TestV20CredIssue.ATTACHMENT.ident
+
+        assert obj["supplements"]
+        assert obj["supplements"][0]["ref"] == TestV20CredIssue.ATTACHMENT.ident
+
         cred_issue = V20CredIssue.deserialize(obj)
         assert type(cred_issue) == V20CredIssue
+        assert isinstance(cred_issue.attachments, list)
+        assert cred_issue.attachments
+        assert isinstance(cred_issue.attachments[0], AttachDecorator)
 
         obj["credentials~attach"][0]["data"]["base64"] = "eyJub3QiOiAiaW5keSJ9"
         with self.assertRaises(BaseModelError):

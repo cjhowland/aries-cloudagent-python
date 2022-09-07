@@ -5,7 +5,7 @@ import json
 
 from abc import ABC
 from collections import namedtuple
-from typing import Mapping, Union
+from typing import Mapping, Type, TypeVar, Union
 
 from marshmallow import Schema, post_dump, pre_load, post_load, ValidationError, EXCLUDE
 
@@ -70,6 +70,9 @@ class BaseModelError(BaseError):
     """Base exception class for base model errors."""
 
 
+ModelType = TypeVar("ModelType", bound="BaseModel")
+
+
 class BaseModel(ABC):
     """Base model that provides convenience methods."""
 
@@ -116,7 +119,9 @@ class BaseModel(ABC):
         return self._get_schema_class()
 
     @classmethod
-    def deserialize(cls, obj, unknown: str = None, none2none: str = False):
+    def deserialize(
+        cls: Type[ModelType], obj, unknown: str = None, none2none: str = False
+    ) -> ModelType:
         """
         Convert from JSON representation to a model instance.
 
