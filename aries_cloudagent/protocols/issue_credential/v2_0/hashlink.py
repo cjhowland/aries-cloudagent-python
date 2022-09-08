@@ -1,6 +1,5 @@
 """Hashlink helper class."""
 
-from enum import Enum
 from typing import Any, Dict, Optional
 from hashlib import sha256
 
@@ -12,13 +11,6 @@ from cbor2.types import CBORTag
 
 # TODO replace with hashberg-io/multiformats after python 3.7 upgrade
 import multibase
-
-
-class HashAlg(Enum):
-    """Supported hash algorithms for hashlinks."""
-
-    SHA256 = ""
-    SHA512 = ""
 
 
 def _cbor_uri_encoder(encoder: CBOREncoder, value: Any):

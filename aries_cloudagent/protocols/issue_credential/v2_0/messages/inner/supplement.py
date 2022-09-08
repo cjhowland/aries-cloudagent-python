@@ -4,7 +4,7 @@ from typing import Optional, Sequence
 from uuid import uuid4
 from marshmallow import fields, validate
 
-from aries_cloudagent.messaging.valid import UUID4
+from ......messaging.valid import UUIDFour
 from ......messaging.models.base import BaseModel, BaseModelSchema
 
 
@@ -74,12 +74,18 @@ class SupplementSchema(BaseModelSchema):
         validate=validate.OneOf(["hashlink-data", "issuer-credential"]),
     )
 
-    id = fields.Str(description="Unique ID for the supplement", required=False, **UUID4)
+    id = fields.Str(
+        description="Unique ID for the supplement",
+        required=False,
+        example=UUIDFour.EXAMPLE,
+        allow_none=False,
+    )
 
     ref = fields.Str(
         description="Reference to ID of attachment described by this supplement",
+        example=UUIDFour.EXAMPLE,
         required=True,
-        **UUID4
+        allow_none=False,
     )
 
     attrs = fields.Nested(

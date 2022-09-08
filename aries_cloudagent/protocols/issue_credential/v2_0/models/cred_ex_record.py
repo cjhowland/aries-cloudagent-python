@@ -1,24 +1,26 @@
 """Aries#0453 v2.0 credential exchange information with non-secrets storage."""
 
 import logging
+from typing import Any, Mapping, Optional, Sequence, Union
 
-from typing import Any, Mapping, Optional, Union
+from marshmallow import Schema, fields, validate
 
-from marshmallow import fields, Schema, validate
-
+from . import UNENCRYPTED_TAGS
 from .....core.profile import ProfileSession
+from .....messaging.decorators.attach_decorator import (
+    AttachDecorator,
+    AttachDecoratorSchema,
+)
 from .....messaging.models.base_record import BaseExchangeRecord, BaseExchangeSchema
 from .....messaging.valid import UUIDFour
 from .....storage.base import StorageError
-
 from ..messages.cred_format import V20CredFormat
 from ..messages.cred_issue import V20CredIssue, V20CredIssueSchema
-from ..messages.cred_proposal import V20CredProposal, V20CredProposalSchema
 from ..messages.cred_offer import V20CredOffer, V20CredOfferSchema
+from ..messages.cred_proposal import V20CredProposal, V20CredProposalSchema
 from ..messages.cred_request import V20CredRequest, V20CredRequestSchema
 from ..messages.inner.cred_preview import V20CredPreviewSchema
-
-from . import UNENCRYPTED_TAGS
+from ..messages.inner.supplement import Supplement, SupplementSchema
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,6 +77,8 @@ class V20CredExRecord(BaseExchangeRecord):
         cred_id_stored: str = None,  # backward compat: BaseRecord.from_storage()
         conn_id: str = None,  # backward compat: BaseRecord.from_storage()
         by_format: Mapping = None,  # backward compat: BaseRecord.from_storage()
+        supplements: Sequence[Union[Mapping, Supplement]] = None,
+        attachments: Sequence[Union[Mapping, AttachDecorator]] = None,
         **kwargs,
     ):
         """Initialize a new V20CredExRecord."""
@@ -94,6 +98,12 @@ class V20CredExRecord(BaseExchangeRecord):
         self.auto_issue = auto_issue
         self.auto_remove = auto_remove
         self.error_msg = error_msg
+        self.supplements = [
+            Supplement.serde(supplement).de for supplement in supplements or []
+        ]
+        self.attachments = [
+            AttachDecorator.serde(attachment).de for attachment in attachments or []
+        ]
 
     @property
     def cred_ex_id(self) -> str:
@@ -209,6 +219,14 @@ class V20CredExRecord(BaseExchangeRecord):
                     "cred_issue",
                 )
                 if getattr(self, prop) is not None
+            },
+            **{
+                prop: [item.serialize() for item in getattr(self, prop)]
+                for prop in (
+                    "supplements",
+                    "attachments",
+                )
+                if getattr(self, prop)
             },
         }
 
@@ -391,4 +409,16 @@ class V20CredExRecordSchema(BaseExchangeSchema):
         required=False,
         description="Error message",
         example="The front fell off",
+    )
+    supplements = fields.Nested(
+        SupplementSchema,
+        description="Supplements to the credential",
+        many=True,
+        required=False,
+    )
+    attachments = fields.Nested(
+        AttachDecoratorSchema,
+        many=True,
+        required=False,
+        description="Attachments of other data associated with the credential",
     )

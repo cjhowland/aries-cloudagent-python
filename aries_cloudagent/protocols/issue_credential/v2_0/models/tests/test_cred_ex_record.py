@@ -1,11 +1,16 @@
 from asynctest import mock as async_mock, TestCase as AsyncTestCase
 
+
 from ......core.in_memory import InMemoryProfile
-from ......messaging.decorators.attach_decorator import AttachDecorator
+from ......messaging.decorators.attach_decorator import (
+    AttachDecorator,
+    AttachDecoratorData,
+)
 
 from ...message_types import ATTACHMENT_FORMAT, CRED_20_PROPOSAL
 from ...messages.cred_format import V20CredFormat
 from ...messages.inner.cred_preview import V20CredAttrSpec, V20CredPreview
+from ...messages.inner.supplement import Supplement, SupplementAttribute
 from ...messages.cred_proposal import V20CredProposal
 
 from .. import cred_ex_record as test_module
@@ -110,11 +115,39 @@ class TestV20CredExRecord(AsyncTestCase):
                 auto_remove=True,
                 error_msg=None,
                 trace=False,
+                supplements=[
+                    Supplement(
+                        type="hashlink-data",
+                        ref="attach-id",
+                        attrs=[SupplementAttribute("field", "test")],
+                    )
+                ],
+                attachments=[
+                    AttachDecorator(
+                        ident="attach-id",
+                        data=AttachDecoratorData(json_={"test": "data"}),
+                    )
+                ],
             )
             assert type(cx_rec.cred_proposal) == V20CredProposal
             ser = cx_rec.serialize()
             deser = V20CredExRecord.deserialize(ser)
             assert type(deser.cred_proposal) == V20CredProposal
+
+            record_ser = cx_rec.record_value
+            assert "supplements" in record_ser
+            assert "attachments" in record_ser
+            assert isinstance(record_ser["supplements"], list)
+            assert isinstance(record_ser["attachments"], list)
+            assert record_ser["supplements"]
+            assert record_ser["attachments"]
+            assert isinstance(record_ser["supplements"][0], dict)
+            assert isinstance(record_ser["attachments"][0], dict)
+            record_deser = V20CredExRecord(**record_ser)
+            assert record_deser.supplements
+            assert isinstance(record_deser.supplements[0], Supplement)
+            assert record_deser.attachments
+            assert isinstance(record_deser.attachments[0], AttachDecorator)
 
     async def test_save_error_state(self):
         session = InMemoryProfile.test_session()

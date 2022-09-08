@@ -1,27 +1,26 @@
 """V2.0 issue-credential protocol manager."""
 
 import logging
+from typing import Mapping, Optional, Sequence, Tuple, Union
 
-from typing import Mapping, Optional, Sequence, Tuple
 
 from ....connections.models.conn_record import ConnRecord
-from ....core.oob_processor import OobRecord
 from ....core.error import BaseError
+from ....core.oob_processor import OobRecord
 from ....core.profile import Profile
-from ....messaging.responder import BaseResponder
 from ....messaging.decorators.attach_decorator import AttachDecorator
+from ....messaging.responder import BaseResponder
 from ....storage.error import StorageError, StorageNotFoundError
-from ....protocols.issue_credential.v2_0.messages.inner.supplement import Supplement
 from ....wallet.models.attachment_data_record import AttachmentDataRecord
-
 from .messages.cred_ack import V20CredAck
 from .messages.cred_format import V20CredFormat
 from .messages.cred_issue import V20CredIssue
 from .messages.cred_offer import V20CredOffer
-from .messages.cred_problem_report import V20CredProblemReport, ProblemReportReason
+from .messages.cred_problem_report import ProblemReportReason, V20CredProblemReport
 from .messages.cred_proposal import V20CredProposal
 from .messages.cred_request import V20CredRequest
 from .messages.inner.cred_preview import V20CredPreview
+from .messages.inner.supplement import Supplement
 from .models.cred_ex_record import V20CredExRecord
 
 LOGGER = logging.getLogger(__name__)
@@ -59,6 +58,8 @@ class V20CredManager:
         connection_id: str,
         cred_proposal: V20CredProposal,
         auto_remove: bool = None,
+        supplements: Sequence[Union[Mapping, Supplement]] = None,
+        attachments: Sequence[Union[Mapping, AttachDecorator]] = None,
     ) -> Tuple[V20CredExRecord, V20CredOffer]:
         """
         Set up a new credential exchange record for an automated send.
@@ -82,6 +83,8 @@ class V20CredManager:
             auto_issue=True,
             auto_remove=auto_remove,
             trace=(cred_proposal._trace is not None),
+            supplements=supplements,
+            attachments=attachments,
         )
         (cred_ex_record, cred_offer) = await self.create_offer(
             cred_ex_record=cred_ex_record,
@@ -525,6 +528,8 @@ class V20CredManager:
             comment=comment,
             formats=[format for (format, _) in issue_formats],
             credentials_attach=[attach for (_, attach) in issue_formats],
+            supplements=cred_ex_record.supplements or None,
+            attachments=cred_ex_record.attachments or None,
         )
 
         cred_ex_record.state = V20CredExRecord.STATE_ISSUED

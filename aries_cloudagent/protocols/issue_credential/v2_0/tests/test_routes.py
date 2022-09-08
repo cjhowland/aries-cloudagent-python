@@ -1,21 +1,14 @@
-from .....vc.ld_proofs.error import LinkedDataProofException
-from asynctest import mock as async_mock, TestCase as AsyncTestCase
+from asynctest import TestCase as AsyncTestCase, mock as async_mock
 
-from .....admin.request_context import AdminRequestContext
-from .....wallet.key_type import KeyType
-from .....wallet.did_method import DIDMethod
-from .....wallet.base import BaseWallet
-from .....wallet.did_info import DIDInfo
-
+from . import LD_PROOF_VC_DETAIL, TEST_DID
 from .. import routes as test_module
+from .....admin.request_context import AdminRequestContext
+from .....vc.ld_proofs.error import LinkedDataProofException
+from .....wallet.util import bytes_to_b64
 from ..formats.indy.handler import IndyCredFormatHandler
 from ..formats.ld_proof.handler import LDProofCredFormatHandler
 from ..messages.cred_format import V20CredFormat
-
-from . import (
-    LD_PROOF_VC_DETAIL,
-    TEST_DID,
-)
+from .test_hashlink import EXAMPLE_LINK
 
 
 class TestV20CredRoutes(AsyncTestCase):
@@ -1735,6 +1728,21 @@ class TestV20CredRoutes(AsyncTestCase):
 
             with self.assertRaises(test_module.web.HTTPBadRequest):
                 await test_module.credential_exchange_problem_report(self.request)
+
+    async def test_hashlink(self):
+        self.request.json = async_mock.CoroutineMock(
+            return_value={
+                "alg": "sha2-256",
+                "enc": "base58btc",
+                "data": bytes_to_b64(b"Hello World!"),
+                "metadata": {
+                    "url": ["http://example.org/hw.txt"],
+                    "content-type": "text/plain",
+                },
+            }
+        )
+        result = await test_module.create_hashlink(self.request)
+        assert result == {"result": EXAMPLE_LINK}
 
     async def test_register(self):
         mock_app = async_mock.MagicMock()

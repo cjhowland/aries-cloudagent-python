@@ -1,39 +1,6 @@
-import asyncio
 import json
 
-from copy import deepcopy
-from time import time
-
-from asynctest import mock as async_mock, TestCase as AsyncTestCase
-
-from .....cache.base import BaseCache
-from .....cache.in_memory import InMemoryCache
-from .....core.in_memory import InMemoryProfile
-from .....indy.issuer import IndyIssuer
-from .....messaging.decorators.thread_decorator import ThreadDecorator
-from .....messaging.decorators.attach_decorator import AttachDecorator
-from .....messaging.responder import BaseResponder, MockResponder
-from .....ledger.base import BaseLedger
-from .....storage.error import StorageNotFoundError
-
-from .. import manager as test_module
-from ..manager import V20CredManager, V20CredManagerError
-from ..message_types import (
-    ATTACHMENT_FORMAT,
-    CRED_20_PROPOSAL,
-    CRED_20_OFFER,
-    CRED_20_REQUEST,
-    CRED_20_ISSUE,
-)
-from ..messages.cred_ack import V20CredAck
-from ..messages.cred_issue import V20CredIssue
-from ..messages.cred_format import V20CredFormat
-from ..messages.cred_offer import V20CredOffer
-from ..messages.cred_problem_report import V20CredProblemReport
-from ..messages.cred_proposal import V20CredProposal
-from ..messages.cred_request import V20CredRequest
-from ..messages.inner.cred_preview import V20CredPreview, V20CredAttrSpec
-from ..models.cred_ex_record import V20CredExRecord
+from asynctest import TestCase as AsyncTestCase, mock as async_mock
 
 from . import (
     CRED_DEF,
@@ -46,8 +13,38 @@ from . import (
     REV_REG_DEF,
     SCHEMA,
     SCHEMA_ID,
-    TEST_DID,
 )
+from .. import manager as test_module
+from .....cache.base import BaseCache
+from .....cache.in_memory import InMemoryCache
+from .....core.in_memory import InMemoryProfile
+from .....indy.issuer import IndyIssuer
+from .....ledger.base import BaseLedger
+from .....messaging.decorators.attach_decorator import (
+    AttachDecorator,
+    AttachDecoratorData,
+)
+from .....messaging.decorators.thread_decorator import ThreadDecorator
+from .....messaging.responder import BaseResponder, MockResponder
+from .....storage.error import StorageNotFoundError
+from ..manager import V20CredManager, V20CredManagerError
+from ..message_types import (
+    ATTACHMENT_FORMAT,
+    CRED_20_ISSUE,
+    CRED_20_OFFER,
+    CRED_20_PROPOSAL,
+    CRED_20_REQUEST,
+)
+from ..messages.cred_ack import V20CredAck
+from ..messages.cred_format import V20CredFormat
+from ..messages.cred_issue import V20CredIssue
+from ..messages.cred_offer import V20CredOffer
+from ..messages.cred_problem_report import V20CredProblemReport
+from ..messages.cred_proposal import V20CredProposal
+from ..messages.cred_request import V20CredRequest
+from ..messages.inner.cred_preview import V20CredAttrSpec, V20CredPreview
+from ..messages.inner.supplement import Supplement, SupplementAttribute
+from ..models.cred_ex_record import V20CredExRecord
 
 CRED_REQ = V20CredRequest(
     comment="Test",
@@ -972,6 +969,19 @@ class TestV20CredManager(AsyncTestCase):
             role=V20CredExRecord.ROLE_ISSUER,
             state=V20CredExRecord.STATE_REQUEST_RECEIVED,
             thread_id=thread_id,
+            supplements=[
+                Supplement(
+                    type="hashlink-data",
+                    ref="attach-id",
+                    attrs=[SupplementAttribute("field", "test")],
+                )
+            ],
+            attachments=[
+                AttachDecorator(
+                    ident="attach-id",
+                    data=AttachDecoratorData(json_={"test": "data"}),
+                )
+            ],
         )
 
         issuer = async_mock.MagicMock()
@@ -1013,6 +1023,8 @@ class TestV20CredManager(AsyncTestCase):
             assert ret_cred_issue.attachment() == INDY_CRED
             assert ret_cx_rec.state == V20CredExRecord.STATE_ISSUED
             assert ret_cred_issue._thread_id == thread_id
+            assert ret_cred_issue.supplements
+            assert ret_cred_issue.attachments
 
     async def test_issue_credential_x_no_formats(self):
         comment = "comment"
