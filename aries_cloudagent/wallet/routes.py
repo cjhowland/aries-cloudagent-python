@@ -11,7 +11,6 @@ from aiohttp_apispec import (
     request_schema,
     response_schema,
 )
-import logging
 from marshmallow import fields, validate
 
 from ..admin.request_context import AdminRequestContext
@@ -459,7 +458,7 @@ async def wallet_set_public_did(request: web.BaseRequest):
     mediator_endpoint = None
     if mediation_record:
         routing_keys = mediation_record.routing_keys
-        mediator_endpoint=mediation_record.endpoint
+        mediator_endpoint = mediation_record.endpoint
 
     try:
         info, attrib_def = await promote_wallet_public_did(

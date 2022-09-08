@@ -8,7 +8,7 @@ from datetime import date, datetime
 from io import StringIO
 from os import path
 from time import time
-from typing import TYPE_CHECKING, List, Sequence, Tuple, Optional
+from typing import List, Sequence, Tuple, Optional
 
 import indy.ledger
 import indy.pool
