@@ -13,7 +13,7 @@ def create_supplement():
     def _create_supplement(num):
         return Supplement(
             type="hashlink_data",
-            attrs={"key": "field", "value": "<fieldname>"},
+            attrs=[{"key": "field", "value": "<fieldname>"}],
             ref=None,
             id="attachment_id_" + str(num),
         )
@@ -76,12 +76,13 @@ def test_match_by_attachment_id(create_supplement, create_attachment):
     supplements = [create_supplement(1), create_supplement(2)]
     attachments = [create_attachment(1), create_attachment(2)]
     result = AttachmentDataRecord.match_by_attachment_id(
-        supplements, attachments, cred_id="test_cred_id", attribute="test_attribute"
+        supplements, attachments, cred_id="test_cred_id"
     )
 
     for record in result:
         assert type(record) == AttachmentDataRecord
         assert record.attachment_id == record.supplement.id
+        assert record.attribute == "<fieldname>"
 
 
 @pytest.mark.asyncio
@@ -91,11 +92,7 @@ async def test_save_attachments(create_supplement, create_attachment, profile):
         supplements = [create_supplement(1), create_supplement(2)]
         attachments = [create_attachment(1), create_attachment(2)]
         result = await AttachmentDataRecord.save_attachments(
-            session,
-            supplements,
-            attachments,
-            cred_id="test_cred_id",
-            attribute="test_attribute",
+            session, supplements, attachments, cred_id="test_cred_id"
         )
 
         assert type(result) == list

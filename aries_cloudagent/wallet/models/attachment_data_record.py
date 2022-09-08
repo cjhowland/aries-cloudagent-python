@@ -8,6 +8,7 @@ from ...messaging.models.base_record import BaseRecord, BaseRecordSchema
 from ...messaging.valid import UUIDFour
 from ...protocols.issue_credential.v2_0.messages.inner.supplement import (
     Supplement,
+    SupplementAttribute,
     SupplementSchema,
 )
 from ...messaging.decorators.attach_decorator import (
@@ -34,7 +35,7 @@ class AttachmentDataRecord(BaseRecord):
         supplement: Supplement = None,
         attachment: AttachDecoratorData = None,
         cred_id: str = None,
-        attribute: str = None,
+        attribute: Sequence[SupplementAttribute] = None,
     ):
         super().__init__()
         self.attachment_id = attachment_id
@@ -69,7 +70,6 @@ class AttachmentDataRecord(BaseRecord):
         supplements: Sequence[Supplement],
         attachments: Sequence[AttachDecorator],
         cred_id: str,
-        attribute: str,
     ):
         """Match supplement and attachment by attachment_id and store in
         AttachmentDataRecord."""
@@ -77,26 +77,25 @@ class AttachmentDataRecord(BaseRecord):
         ats: dict[str, AttachDecoratorData] = AttachmentDataRecord.attachment_lookup(
             attachments
         )
+
         return [
             AttachmentDataRecord(
                 attachment_id=sup.id,
                 supplement=sup,
                 attachment=ats[sup.id],
                 cred_id=cred_id,
-                attribute=attribute,
+                attribute=sup.attrs[0]["value"],
             )
             for sup in supplements
         ]
 
     @classmethod
-    async def save_attachments(
-        cls, session, supplements, attachments, cred_id, attribute
-    ):
+    async def save_attachments(cls, session, supplements, attachments, cred_id):
         """ "Save all attachments"""
         return [
             await attachment.save(session)
             for attachment in AttachmentDataRecord.match_by_attachment_id(
-                supplements, attachments, cred_id, attribute
+                supplements, attachments, cred_id
             )
         ]
 

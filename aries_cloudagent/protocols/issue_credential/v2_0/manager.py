@@ -636,10 +636,14 @@ class V20CredManager:
                 await cred_format.handler(self.profile).store_credential(
                     cred_ex_record, cred_id
                 )
-                async with self.profile.session() as session:
-                    await AttachmentDataRecord.save_attachments(
-                        session=session, supplements=supplements, attachments=attachments
-                    )
+                if supplements:
+                    async with self.profile.session() as session:
+                        await AttachmentDataRecord.save_attachments(
+                            session=session,
+                            supplements=supplements,
+                            attachments=attachments,
+                            cred_id=cred_id,
+                        )
                 # TODO: if storing multiple credentials we can't reuse the same id
                 cred_id = None
 
