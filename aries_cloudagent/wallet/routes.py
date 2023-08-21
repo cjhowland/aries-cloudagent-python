@@ -1044,7 +1044,9 @@ async def wallet_jwt_verify(request: web.BaseRequest):
     )
 
 
-@docs(tags=["wallet"], summary="Verify a EdDSA sd-jws using did keys with a given JWS")
+@docs(
+    tags=["wallet"], summary="Verify a EdDSA sd-jws using did keys with a given SD-JWS"
+)
 @request_schema(SDJWSVerifySchema())
 @response_schema(SDJWSVerifyResponseSchema(), 200, description="")
 async def wallet_sd_jwt_verify(request: web.BaseRequest):
@@ -1070,6 +1072,7 @@ async def wallet_sd_jwt_verify(request: web.BaseRequest):
             "headers": result.headers,
             "payload": result.payload,
             "kid": result.kid,
+            "disclosures": result.disclosures,
         }
     )
 
